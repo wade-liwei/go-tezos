@@ -161,6 +161,9 @@ func (o *OperationService) forgeOperationBytes(branchHash string, counter int, w
 	  counter++
 	**/
 
+	combinedOps = append(combinedOps, block.Contents{Kind: "reveal", PublicKey: wallet.Pk, Source: wallet.Address, Fee: "2000", GasLimit: "15000", StorageLimit: "0", Counter: strconv.Itoa(counter)})
+	counter++
+
 	for k := range batch {
 
 		if batch[k].Amount > 0 {
