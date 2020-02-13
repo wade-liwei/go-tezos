@@ -291,3 +291,37 @@ func unmarshalString(v []byte) (string, error) {
 	}
 	return str, nil
 }
+
+func CreateWallet(mnenomic string, password string) (Wallet, error) {
+
+	seed := pbkdf2.Key([]byte(mnenomic), []byte("mnemonic"+password), 2048, 32, sha512.New)
+	privKey := ed25519.NewKeyFromSeed(seed)
+	pubKey := privKey.Public().(ed25519.PublicKey)
+	pubKeyBytes := []byte(pubKey)
+	signKp := keyPair{PrivKey: privKey, PubKey: pubKeyBytes}
+
+	address, err := generatePublicHash(pubKeyBytes)
+	if err != nil {
+		return Wallet{}, errors.Wrapf(err, "could not create wallet")
+	}
+
+	wallet := Wallet{
+		Address:  address,
+		Mnemonic: mnenomic,
+		Kp:       signKp,
+		Seed:     seed,
+		Sk:       crypto.B58cencode(privKey, crypto.Prefix_edsk),
+		Pk:       crypto.B58cencode(pubKeyBytes, crypto.Prefix_edpk),
+	}
+
+	return wallet, nil
+}
+
+func generatePublicHash(publicKey []byte) (string, error) {
+	hash, err := blake2b.New(20, []byte{})
+	hash.Write(publicKey)
+	if err != nil {
+		return "", errors.Wrapf(err, "could not generate public hash from public key %s", string(publicKey))
+	}
+	return crypto.B58cencode(hash.Sum(nil), crypto.Prefix_tz1), nil
+}
